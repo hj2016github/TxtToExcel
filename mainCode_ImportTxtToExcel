@@ -1,0 +1,76 @@
+Sub 导入txt文件名及文本内容()
+
+Dim t As Date
+Dim r As Long
+
+Dim Fso As Object
+Dim myFile As Object
+Dim mySheet As Worksheet
+Dim txtFolder As Object
+Dim lines, cols, k%, i%, j%, q%  '% = int type
+Dim reg, str As String 'reg为正则表达式 需要进行整体替换的
+    Set reg = CreateObject("vbscript.regexp")
+    reg.Pattern = "\s+"
+    reg.Global = True '全局匹配
+    
+
+t = Timer
+r = 2
+
+Set txtFolder = CreateObject("Shell.Application").BrowseForFolder(0, "请选择txt所在文件夹：", 0, ThisWorkbook.Path) '选择文件夹，根目录为本工作簿所在文件夹
+
+If txtFolder Is Nothing Then Exit Sub '未选择文件夹则退出
+
+Set Fso = CreateObject("Scripting.FileSystemObject") '引用fso对象
+Set mySheet = ThisWorkbook.Sheets("sheet1") '设置汇总表
+
+
+Application.ScreenUpdating = False '关闭屏幕刷新
+
+'__________汇总表初始化______________________________
+mySheet.Cells.Clear
+mySheet.[A1:B1].Value = Array("文件名", "文本内容")
+'____________________________________________________
+
+For Each myFile In Fso.getfolder(txtFolder.Self.Path).Files
+    If Fso.GetExtensionName(myFile) = "txt" Then '判断拓展名
+        mySheet.Cells(r, 1).Value = myFile.Name '写入文件名
+       ' mySheet.Cells(r, 2).Value = Fso.OpenTextFile(myFile).ReadAll '写入文本
+       Open myFile For Input As #1
+         lines = Split(StrConv(InputB(LOF(1), 1), vbUnicode), vbCrLf) '分行的一维数组
+            
+    Close #1
+        
+       k = UBound(lines) '文件的行数
+            For i = 0 To k
+                lines(i) = Trim(lines(i))
+                'MsgBox lines(i)
+                 lines(i) = reg.Replace(lines(i), ",") '整体把不定空格替换成逗号
+                'MsgBox lines(i)
+           
+        cols = Split(lines(i), ",")  'cols分割后的一维数组
+                q = UBound(cols) '文件列数
+                For j = 0 To q
+                     Cells(i + r, j + 2) = cols(j)
+                Next
+       Next
+        r = r + k + 1
+    End If
+Next myFile
+
+Application.ScreenUpdating = True '恢复屏幕刷新
+
+Set mySheet = Nothing
+Set Fso = Nothing
+Set txtFolder = Nothing
+
+MsgBox "结束，共运行" & Format((Timer - t), "0.0") & "秒"
+
+End Sub
+
+Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+
+End Sub
+
+
+
